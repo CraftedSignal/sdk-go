@@ -193,7 +193,7 @@ func discardLogger() *slog.Logger {
 
 func newInsecureTransport(base *http.Transport) *http.Transport {
 	clone := base.Clone()
-	clone.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
+	clone.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402 -- intentional, WithInsecure() is for dev/self-signed only
 	return clone
 }
 

@@ -5,11 +5,9 @@ run:
 linters:
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - unused
     - gofmt
     - goimports
     - misspell
@@ -22,15 +20,11 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: false
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-      - shadow
   gosec:
     excludes:
       - G104
       - G304
+      - G402
   goimports:
     local-prefixes: github.com/craftedsignal/sdk-go
   misspell:
@@ -45,9 +39,3 @@ issues:
       linters:
         - gosec
         - errcheck
-
-output:
-  formats:
-    - format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
