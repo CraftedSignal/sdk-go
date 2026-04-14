@@ -1,0 +1,5 @@
+*.test
+*.out
+dist/
+coverage.out
+coverage.html

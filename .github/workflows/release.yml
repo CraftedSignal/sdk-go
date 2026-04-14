@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.new_release_version }}
+      new_release: ${{ steps.semver.outputs.new_release_published }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install semantic-release
+        run: |
+          npm install --no-save \
+            semantic-release@24 \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator \
+            @semantic-release/github \
+            conventional-changelog-conventionalcommits
+
+      - name: Semantic Release
+        id: semver
+        uses: cycjimmy/semantic-release-action@v6
+        with:
+          semantic_version: 24
+          extends: .github/.releaserc.json
+          extra_plugins: |
+            conventional-changelog-conventionalcommits
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
