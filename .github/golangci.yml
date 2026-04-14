@@ -10,13 +10,20 @@ linters:
     - govet
     - ineffassign
     - staticcheck
-    - gofmt
-    - goimports
     - misspell
     - unconvert
     - bodyclose
     - noctx
     - gosec
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/craftedsignal/sdk-go
 
 linters-settings:
   errcheck:
@@ -27,8 +34,6 @@ linters-settings:
       - G104
       - G304
       - G402
-  goimports:
-    local-prefixes: github.com/craftedsignal/sdk-go
   misspell:
     locale: US
 
