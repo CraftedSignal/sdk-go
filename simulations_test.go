@@ -124,3 +124,124 @@ func TestSimulationsDeleteRun(t *testing.T) {
 		t.Errorf("got %s %s", gotMethod, gotPath)
 	}
 }
+
+func TestSimulationsGetRun(t *testing.T) {
+	client, cleanup := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/simulations/runs/run-1" {
+			t.Errorf("path = %s", r.URL.Path)
+		}
+		writeJSON(w, 200, map[string]any{"id": "run-1", "status": "completed"})
+	}))
+	defer cleanup()
+
+	run, err := client.Simulations.GetRun(context.Background(), "run-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if run.ID != "run-1" {
+		t.Errorf("ID = %q", run.ID)
+	}
+}
+
+func TestSimulationsStartVerify(t *testing.T) {
+	client, cleanup := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/simulations/verify/run-1" {
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+		writeJSON(w, 200, map[string]any{"run_id": "run-1", "status": "correlating"})
+	}))
+	defer cleanup()
+
+	job, err := client.Simulations.StartVerify(context.Background(), "run-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job.RunID != "run-1" {
+		t.Errorf("RunID = %q, want run-1", job.RunID)
+	}
+}
+
+func TestSimulationsPollVerify(t *testing.T) {
+	client, cleanup := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/simulations/verify/run-1" {
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+		writeJSON(w, 200, map[string]any{"status": "completed", "results": []any{}})
+	}))
+	defer cleanup()
+
+	result, err := client.Simulations.PollVerify(context.Background(), "run-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != "completed" {
+		t.Errorf("Status = %q, want completed", result.Status)
+	}
+}
+
+func TestSimulationsVerify_Failure(t *testing.T) {
+	calls := 0
+	client, cleanup := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Method == http.MethodPost {
+			writeJSON(w, 200, map[string]any{"run_id": "run-1", "status": "correlating"})
+			return
+		}
+		writeJSON(w, 200, map[string]any{"status": "failed", "error": "no matching events"})
+	}))
+	defer cleanup()
+
+	_, err := client.Simulations.Verify(context.Background(), "run-1", nil)
+	if err == nil {
+		t.Fatal("expected error on failed verification")
+	}
+}
+
+func TestSimulationsVerify_WithProgress(t *testing.T) {
+	calls := 0
+	client, cleanup := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Method == http.MethodPost {
+			writeJSON(w, 200, map[string]any{"run_id": "run-1", "status": "correlating"})
+			return
+		}
+		status := "correlating"
+		if calls > 2 {
+			status = "completed"
+		}
+		writeJSON(w, 200, map[string]any{"status": status, "results": []any{}})
+	}))
+	defer cleanup()
+
+	var progressCalls int
+	progress := func(msg string, pct int) { progressCalls++ }
+	result, err := client.Simulations.Verify(context.Background(), "run-1", progress)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != "completed" {
+		t.Errorf("Status = %q, want completed", result.Status)
+	}
+	if progressCalls == 0 {
+		t.Error("expected progress to be called at least once")
+	}
+}
+
+func TestSimulationsVerify_ContextCancel(t *testing.T) {
+	client, cleanup := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			writeJSON(w, 200, map[string]any{"run_id": "run-1", "status": "correlating"})
+			return
+		}
+		writeJSON(w, 200, map[string]any{"status": "correlating", "results": []any{}})
+	}))
+	defer cleanup()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	_, err := client.Simulations.Verify(ctx, "run-1", nil)
+	if err == nil {
+		t.Fatal("expected error from cancelled context")
+	}
+}

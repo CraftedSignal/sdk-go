@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	craftedsignal "github.com/craftedsignal/sdk-go"
 )
@@ -74,5 +75,73 @@ func TestMe_Unauthorized(t *testing.T) {
 	_, err := client.Me(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestWithUserAgent(t *testing.T) {
+	var gotUA string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		writeJSON(w, 200, map[string]any{"company": "Test", "api_key_name": "k", "scopes": []string{}})
+	}))
+	defer srv.Close()
+
+	client, err := craftedsignal.NewClient("test-token",
+		craftedsignal.WithBaseURL(srv.URL),
+		craftedsignal.WithRetry(0, craftedsignal.NoRetry),
+		craftedsignal.WithUserAgent("myapp/1.0"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _ = client.Me(context.Background())
+	if gotUA != "myapp/1.0" {
+		t.Errorf("User-Agent = %q, want myapp/1.0", gotUA)
+	}
+}
+
+func TestWithInsecure(t *testing.T) {
+	// WithInsecure should not panic and client should be usable
+	client, err := craftedsignal.NewClient("test-token",
+		craftedsignal.WithInsecure(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if client == nil {
+		t.Fatal("client should not be nil")
+	}
+}
+
+func TestWithVerbose(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, 200, map[string]any{"company": "T", "api_key_name": "k", "scopes": []string{}})
+	}))
+	defer srv.Close()
+
+	client, err := craftedsignal.NewClient("test-token",
+		craftedsignal.WithBaseURL(srv.URL),
+		craftedsignal.WithRetry(0, craftedsignal.NoRetry),
+		craftedsignal.WithVerbose(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.Me(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWithPollInterval(t *testing.T) {
+	// WithPollInterval should set poll interval without panicking
+	client, err := craftedsignal.NewClient("test-token",
+		craftedsignal.WithPollInterval(10*time.Millisecond),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if client == nil {
+		t.Fatal("client should not be nil")
 	}
 }

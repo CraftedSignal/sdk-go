@@ -29,3 +29,14 @@ func TestTokenRedaction(t *testing.T) {
 		t.Errorf("MarshalJSON = %s, want \"[REDACTED]\"", b)
 	}
 }
+
+func TestTokenMarshalText(t *testing.T) {
+	tok := craftedsignal.Token("super-secret-key")
+	b, err := tok.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "[REDACTED]" {
+		t.Errorf("MarshalText = %q, want [REDACTED]", string(b))
+	}
+}
