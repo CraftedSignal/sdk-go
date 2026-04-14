@@ -11,7 +11,7 @@ import (
 func TestTokenRedaction(t *testing.T) {
 	tok := craftedsignal.Token("super-secret-key")
 
-	if got := fmt.Sprintf("%s", tok); got != "[REDACTED]" {
+	if got := tok.String(); got != "[REDACTED]" {
 		t.Errorf("String() = %q, want [REDACTED]", got)
 	}
 	if got := fmt.Sprintf("%v", tok); got != "[REDACTED]" {

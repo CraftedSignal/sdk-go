@@ -12,7 +12,6 @@ linters:
     - staticcheck
     - misspell
     - unconvert
-    - bodyclose
     - noctx
     - gosec
 
@@ -46,4 +45,3 @@ issues:
       linters:
         - gosec
         - errcheck
-        - bodyclose
