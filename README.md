@@ -221,6 +221,35 @@ cs.Detections = &mockDetections{}
 
 [pkg.go.dev/github.com/craftedsignal/sdk-go](https://pkg.go.dev/github.com/craftedsignal/sdk-go)
 
+## Public threat feed
+
+Read-only client for the public threat feed at `feed.craftedsignal.io`. No auth, separate from the platform API client above.
+
+```go
+feed := craftedsignal.NewFeedClient()
+
+// All briefs
+all, err := feed.Latest(ctx)
+
+// Filtered
+critical, _ := feed.BySeverity(ctx, "critical")
+threats, _  := feed.ByType(ctx, "threat")
+fortinet, _ := feed.ByVendor(ctx, "fortinet")
+apt29, _    := feed.ByActor(ctx, "apt29")
+```
+
+Each call returns a `*Feed` with `Items []FeedItem` (title, summary, date, type, severities, products, vendors, actors, tags, exploited, CVEs). Schema and full URL list at [feed.craftedsignal.io/api](https://feed.craftedsignal.io/api/).
+
+Options:
+
+```go
+feed := craftedsignal.NewFeedClient(
+    craftedsignal.WithFeedBaseURL("https://staging-feed.example.com"),
+    craftedsignal.WithFeedHTTPClient(&http.Client{Timeout: 5 * time.Second}),
+    craftedsignal.WithFeedUserAgent("my-soc-tool/1.0"),
+)
+```
+
 ## License
 
 MIT
