@@ -2,6 +2,7 @@ package craftedsignal_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -18,7 +19,10 @@ func TestDetectionsExport(t *testing.T) {
 			t.Errorf("path = %s", r.URL.Path)
 		}
 		writeJSON(w, 200, []map[string]any{
-			{"id": "rule-1", "title": "Test Rule", "platform": "splunk", "enabled": true},
+			{
+				"id": "rule-1", "title": "Test Rule", "platform": "splunk", "enabled": true,
+				"operational_guidance": "# Response\n\nValidate alert context.\n",
+			},
 		})
 	}))
 	defer cleanup()
@@ -29,6 +33,9 @@ func TestDetectionsExport(t *testing.T) {
 	}
 	if len(rules) != 1 || rules[0].ID != "rule-1" {
 		t.Errorf("unexpected rules: %+v", rules)
+	}
+	if got := rules[0].OperationalGuidance; got != "# Response\n\nValidate alert context.\n" {
+		t.Errorf("OperationalGuidance = %q", got)
 	}
 }
 
@@ -59,9 +66,13 @@ func TestDetectionsExport_Unauthorized(t *testing.T) {
 }
 
 func TestDetectionsImport(t *testing.T) {
+	var gotReq craftedsignal.ImportRequest
 	client, cleanup := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/detections/import" {
 			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
+			t.Errorf("decode request body: %v", err)
 		}
 		writeJSON(w, 200, map[string]any{
 			"success": true, "created": 1, "updated": 0, "unchanged": 0,
@@ -74,7 +85,11 @@ func TestDetectionsImport(t *testing.T) {
 
 	atomic := true
 	resp, err := client.Detections.Import(context.Background(), craftedsignal.ImportRequest{
-		Rules:   []craftedsignal.Detection{{Title: "Test", Platform: "splunk"}},
+		Rules: []craftedsignal.Detection{{
+			Title:               "Test",
+			Platform:            "splunk",
+			OperationalGuidance: "# Response\n\nValidate alert context.\n",
+		}},
 		Message: "initial import",
 		Mode:    "upsert",
 		Atomic:  &atomic,
@@ -84,6 +99,12 @@ func TestDetectionsImport(t *testing.T) {
 	}
 	if resp.Created != 1 {
 		t.Errorf("Created = %d, want 1", resp.Created)
+	}
+	if len(gotReq.Rules) != 1 {
+		t.Fatalf("len(gotReq.Rules) = %d, want 1", len(gotReq.Rules))
+	}
+	if got := gotReq.Rules[0].OperationalGuidance; got != "# Response\n\nValidate alert context.\n" {
+		t.Errorf("OperationalGuidance = %q", got)
 	}
 }
 
