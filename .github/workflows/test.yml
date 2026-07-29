@@ -18,13 +18,13 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       - name: Get Go version
         id: vars
         run: |
           goVersion=$(grep '^FROM golang' .github/go/Dockerfile | cut -d ':' -f 2 | cut -d '-' -f 1)
           echo "go_version=${goVersion}" >> $GITHUB_OUTPUT
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           go-version: ${{ steps.vars.outputs.go_version }}
           cache: true
@@ -36,7 +36,7 @@ jobs:
           total=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
           echo "Coverage: ${total}%"
           awk "BEGIN { if ($total+0 < 80) { print \"Coverage \" $total \"% is below 80%\"; exit 1 } }"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: coverage
           path: coverage.out
@@ -46,17 +46,17 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       - name: Get Go version
         id: vars
         run: |
           goVersion=$(grep '^FROM golang' .github/go/Dockerfile | cut -d ':' -f 2 | cut -d '-' -f 1)
           echo "go_version=${goVersion}" >> $GITHUB_OUTPUT
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           go-version: ${{ steps.vars.outputs.go_version }}
           cache: true
-      - uses: golangci/golangci-lint-action@v9
+      - uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee
         with:
           version: v2.12.2
           args: --config .github/golangci.yml
