@@ -17,6 +17,7 @@ type Client struct {
 	Simulations SimulationsService
 	Health      HealthService
 	APIKeys     APIKeysService
+	Library     LibraryService
 }
 
 // Option configures a Client.
@@ -100,6 +101,7 @@ func NewClient(token string, opts ...Option) (*Client, error) {
 	c.Simulations = &simulationsService{t: tr}
 	c.Health = &healthService{t: tr}
 	c.APIKeys = &apiKeysService{t: tr}
+	c.Library = &libraryService{t: tr}
 	return c, nil
 }
 
