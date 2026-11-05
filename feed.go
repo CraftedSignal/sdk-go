@@ -150,7 +150,7 @@ func (c *FeedClient) fetch(ctx context.Context, path string) (*Feed, error) {
 	if err != nil {
 		return nil, fmt.Errorf("feed: %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
