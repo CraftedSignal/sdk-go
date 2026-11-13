@@ -9,10 +9,15 @@ permissions:
   issues: write
   pull-requests: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     outputs:
       version: ${{ steps.semver.outputs.new_release_version }}
       new_release: ${{ steps.semver.outputs.new_release_published }}
