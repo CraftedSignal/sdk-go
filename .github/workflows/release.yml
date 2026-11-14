@@ -5,14 +5,34 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  validate-test:
+    name: Validate test
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+
+  validate-security:
+    name: Validate security
+    uses: ./.github/workflows/security.yml
+    permissions:
+      contents: read
+
   release:
+    needs: [validate-test, validate-security]
     name: Release
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     outputs:
       version: ${{ steps.semver.outputs.new_release_version }}
       new_release: ${{ steps.semver.outputs.new_release_published }}
